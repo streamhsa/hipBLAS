@@ -2,9 +2,6 @@
 # Copyright 2016 Advanced Micro Devices, Inc.
 # ########################################################################
 
-# This is incremented when the ABI to the library changes
-set( hipblas_SOVERSION 0.1 )
-
 list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
 
 # This option only works for make/nmake and the ninja generators, but no reason it shouldn't be on all the time

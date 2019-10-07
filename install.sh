@@ -103,7 +103,7 @@ install_packages( )
   fi
 
   # dependencies needed for library and clients to build
-  local library_dependencies_ubuntu=( "make" "cmake-curses-gui" "pkg-config" "hip_hcc" )
+  local library_dependencies_ubuntu=( "make" "cmake" "pkg-config" "hip_hcc" )
   local library_dependencies_centos=( "epel-release" "make" "cmake3" "hip_hcc" "gcc-c++" "rpm-build" )
   local library_dependencies_fedora=( "make" "cmake" "hip_hcc" "gcc-c++" "libcxx-devel" "rpm-build" )
 
@@ -193,7 +193,7 @@ build_clients=false
 build_cuda=false
 build_release=true
 build_hip_clang=false
-cmake_prefix_path=/opt/rocm
+cmake_prefix_path=/opt/rocm-2.8.1
 
 # #################################################
 # Parameter parsing
@@ -317,7 +317,7 @@ pushd .
   fi
 
   # Build library
-  ${cmake_executable} ${cmake_common_options} ${cmake_client_options} -DCPACK_SET_DESTDIR=OFF -DCMAKE_PREFIX_PATH="$(pwd)/../deps/deps-install;${cmake_prefix_path}" ../..
+  ${cmake_executable} ${cmake_common_options} ${cmake_client_options} -DCPACK_SET_DESTDIR=OFF -DCMAKE_INSTALL_PREFIX=/opt/rocm-2.8.1 -DCMAKE_PREFIX_PATH="$(pwd)/../deps/deps-install;${cmake_prefix_path}" ../..
   make -j$(nproc)
 
   # #################################################
