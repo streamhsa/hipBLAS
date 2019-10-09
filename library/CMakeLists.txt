@@ -2,8 +2,6 @@
 # Copyright 2016 Advanced Micro Devices, Inc.
 # ########################################################################
 
-# This is incremented when the ABI to the library changes
-set( hipblas_SOVERSION 0 )
 
 list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
 
@@ -75,7 +73,7 @@ else( )
     set( package_name hipblas-alt )
 endif( )
 
-set( HIPBLAS_CONFIG_DIR "\${CPACK_PACKAGING_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" CACHE PATH "Path placed into ldconfig file" )
+set( HIPBLAS_CONFIG_DIR "/opt/rocm/${CMAKE_INSTALL_LIBDIR}" CACHE PATH "Path placed into ldconfig file" )
 
 rocm_create_package(
     NAME ${package_name}

@@ -33,6 +33,8 @@ add_library( hipblas
 )
 add_library( roc::hipblas ALIAS hipblas )
 
+set ( CMAKE_SHARED_LINKER_FLAGS "-Wl,--rpath,$ENV{ROCM_RPATH}" )
+
 # External header includes included as system files
 target_include_directories( hipblas
   SYSTEM PRIVATE
@@ -77,7 +79,8 @@ target_include_directories( hipblas
           $<INSTALL_INTERFACE:include>
 )
 
-rocm_set_soversion( hipblas ${hipblas_SOVERSION} )
+set_target_properties(hipblas PROPERTIES SOVERSION ${LIB_VERSION_MAJOR} )
+set_target_properties(hipblas PROPERTIES VERSION ${LIB_VERSION_STRING} )
 set_target_properties( hipblas PROPERTIES CXX_EXTENSIONS NO )
 set_target_properties( hipblas PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/staging" )
 set_target_properties( hipblas PROPERTIES DEBUG_POSTFIX "-d" )

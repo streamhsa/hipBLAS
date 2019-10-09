@@ -191,7 +191,7 @@ install_prefix=hipblas-install
 build_clients=false
 build_cuda=false
 build_release=true
-cmake_prefix_path=/opt/rocm
+cmake_prefix_path=/opt/rocm-2.7.3
 
 # #################################################
 # Parameter parsing
@@ -312,7 +312,7 @@ pushd .
   fi
 
   # Build library
-  ${cmake_executable} ${cmake_common_options} ${cmake_client_options} -DCPACK_SET_DESTDIR=OFF -DCMAKE_PREFIX_PATH="$(pwd)/../deps/deps-install;${cmake_prefix_path}" ../..
+  ${cmake_executable} ${cmake_common_options} ${cmake_client_options} -DCPACK_SET_DESTDIR=OFF -DCMAKE_INSTALL_PREFIX=/opt/rocm-2.7.3 -DCMAKE_PREFIX_PATH="$(pwd)/../deps/deps-install;${cmake_prefix_path}" ../..
   make -j$(nproc)
 
   # #################################################
