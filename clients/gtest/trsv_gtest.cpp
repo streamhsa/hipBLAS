@@ -3,7 +3,7 @@
  *
  * ************************************************************************ */
 
-#include "testing_set_get_vector.hpp"
+#include "testing_trsv.hpp"
 #include "utility.h"
 #include <gtest/gtest.h>
 #include <math.h>
@@ -18,7 +18,7 @@ using namespace std;
 
 // only GCC/VS 2010 comes with std::tr1::tuple, but it is unnecessary,  std::tuple is good enough;
 
-typedef std::tuple<int, vector<int>> set_get_vector_tuple;
+typedef std::tuple<vector<int>, vector<int>, double> trsv_tuple;
 
 /* =====================================================================
 README: This file contains testers to verify the correctness of
@@ -31,34 +31,39 @@ README: This file contains testers to verify the correctness of
 /* =====================================================================
 Advance users only: BrainStorm the parameters but do not make artificial one which invalidates the
 matrix.
+like lda pairs with M, and "lda must >= M". case "lda < M" will be guarded by argument-checkers
+inside API of course.
 Yet, the goal of this file is to verify result correctness not argument-checkers.
 
 Representative sampling is sufficient, endless brute-force sampling is not necessary
 =================================================================== */
 
-// vector of vector, each vector is a {M};
+// vector of vector, each vector is a {M, N, lda};
 // add/delete as a group
-const int M_range[] = {600};
+const vector<vector<int>> matrix_size_range = {
+    {-1, 0, -1}, {11, 0, 11}, {16, 0, 16}, {32, 0, 32}, {65, 0, 65}
+    //   {10, 10, 2},
+    //   {600,500, 500},
+    //   {1000, 1000, 1000},
+    //   {2000, 2000, 2000},
+    //   {4011, 4011, 4011},
+    //   {8000, 8000, 8000}
+};
 
-// vector of vector, each triple is a {incx, incy, incd};
-// add/delete this list in pairs, like {1, 1, 1}
-const vector<vector<int>> incx_incy_incd_range = {{1, 1, 1},
-                                                  {1, 1, 3},
-                                                  {1, 2, 1},
-                                                  {1, 2, 2},
-                                                  {1, 3, 1},
-                                                  {1, 3, 3},
-                                                  {3, 1, 1},
-                                                  {3, 1, 3},
-                                                  {3, 2, 1},
-                                                  {3, 2, 2},
-                                                  {3, 3, 1},
-                                                  {3, 3, 3}};
+// vector of vector, each element is an {incx, incy}
+const vector<vector<int>> incx_incy_range = {
+    {-2, 0}, {1, 0}, {0, 0}, {2, 0}
+    //     {10, 100}
+};
+
+// vector, each entry is  {alpha};
+// add/delete single values, like {2.0}
+const vector<double> alpha_range = {0.0};
 
 /* ===============Google Unit Test==================================================== */
 
 /* =====================================================================
-     BLAS set_get_vector:
+     BLAS-2 trsv:
 =================================================================== */
 
 /* ============================Setup Arguments======================================= */
@@ -71,50 +76,54 @@ const vector<vector<int>> incx_incy_incd_range = {{1, 1, 1},
 // by std:tuple, you have unpack it with extreme care for each one by like "std::get<0>" which is
 // not intuitive and error-prone
 
-Arguments setup_set_get_vector_arguments(set_get_vector_tuple tup)
+Arguments setup_trsv_arguments(trsv_tuple tup)
 {
-
-    int         M              = std::get<0>(tup);
-    vector<int> incx_incy_incd = std::get<1>(tup);
+    vector<int> matrix_size = std::get<0>(tup);
+    vector<int> incx        = std::get<1>(tup);
 
     Arguments arg;
 
-    // see the comments about vector_size_range above
-    arg.M = M;
+    // see the comments about matrix_size_range above
+    arg.M   = matrix_size[0];
+    arg.N   = matrix_size[1];
+    arg.lda = matrix_size[2];
 
     // see the comments about matrix_size_range above
-    arg.incx = incx_incy_incd[0];
-    arg.incy = incx_incy_incd[1];
-    arg.incd = incx_incy_incd[2];
+    arg.incx = incx[0];
+
+    arg.timing = 0;
 
     return arg;
 }
 
-class set_vector_get_vector_gtest : public ::TestWithParam<set_get_vector_tuple>
+class blas2_trsv_gtest : public ::TestWithParam<trsv_tuple>
 {
 protected:
-    set_vector_get_vector_gtest() {}
-    virtual ~set_vector_get_vector_gtest() {}
+    blas2_trsv_gtest() {}
+    virtual ~blas2_trsv_gtest() {}
     virtual void SetUp() {}
     virtual void TearDown() {}
 };
 
-// TEST_P(set_vector_get_vector_gtest, set_get_vector_float)
-TEST_P(set_vector_get_vector_gtest, float)
+TEST_P(blas2_trsv_gtest, float)
 {
     // GetParam return a tuple. Tee setup routine unpack the tuple
     // and initializes arg(Arguments) which will be passed to testing routine
     // The Arguments data struture have physical meaning associated.
     // while the tuple is non-intuitive.
 
-    Arguments arg = setup_set_get_vector_arguments(GetParam());
+    Arguments arg = setup_trsv_arguments(GetParam());
 
-    hipblasStatus_t status = testing_set_get_vector<float>(arg);
+    hipblasStatus_t status = testing_trsv<float>(arg);
 
     // if not success, then the input argument is problematic, so detect the error message
     if(status != HIPBLAS_STATUS_SUCCESS)
     {
-        if(arg.M < 0)
+        if(arg.M < 0 || arg.N < 0)
+        {
+            EXPECT_EQ(HIPBLAS_STATUS_INVALID_VALUE, status);
+        }
+        else if(arg.lda < arg.M)
         {
             EXPECT_EQ(HIPBLAS_STATUS_INVALID_VALUE, status);
         }
@@ -122,11 +131,36 @@ TEST_P(set_vector_get_vector_gtest, float)
         {
             EXPECT_EQ(HIPBLAS_STATUS_INVALID_VALUE, status);
         }
-        else if(arg.incy <= 0)
+        else
+        {
+            EXPECT_EQ(HIPBLAS_STATUS_SUCCESS, status); // fail
+        }
+    }
+}
+
+TEST_P(blas2_trsv_gtest, double)
+{
+    // GetParam return a tuple. Tee setup routine unpack the tuple
+    // and initializes arg(Arguments) which will be passed to testing routine
+    // The Arguments data struture have physical meaning associated.
+    // while the tuple is non-intuitive.
+
+    Arguments arg = setup_trsv_arguments(GetParam());
+
+    hipblasStatus_t status = testing_trsv<double>(arg);
+
+    // if not success, then the input argument is problematic, so detect the error message
+    if(status != HIPBLAS_STATUS_SUCCESS)
+    {
+        if(arg.M < 0 || arg.N < 0)
         {
             EXPECT_EQ(HIPBLAS_STATUS_INVALID_VALUE, status);
         }
-        else if(arg.incd <= 0)
+        else if(arg.lda < arg.M)
+        {
+            EXPECT_EQ(HIPBLAS_STATUS_INVALID_VALUE, status);
+        }
+        else if(arg.incx <= 0)
         {
             EXPECT_EQ(HIPBLAS_STATUS_INVALID_VALUE, status);
         }
@@ -142,6 +176,8 @@ TEST_P(set_vector_get_vector_gtest, float)
 // ValuesIn take each element (a vector) and combine them and feed them to test_p
 // The combinations are  { {M, N, lda}, {incx,incy} {alpha} }
 
-INSTANTIATE_TEST_CASE_P(rocblas_auxiliary_small,
-                        set_vector_get_vector_gtest,
-                        Combine(ValuesIn(M_range), ValuesIn(incx_incy_incd_range)));
+INSTANTIATE_TEST_CASE_P(hipblastrsv,
+                        blas2_trsv_gtest,
+                        Combine(ValuesIn(matrix_size_range),
+                                ValuesIn(incx_incy_range),
+                                ValuesIn(alpha_range)));

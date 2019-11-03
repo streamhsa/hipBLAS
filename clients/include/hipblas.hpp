@@ -24,8 +24,8 @@
  *   Lower case for vector, e.g. vector x, y    GEMV (y = A*x)
  * ===========================================================================
  */
-template <typename T>
-hipblasStatus_t hipblasScal(hipblasHandle_t handle, int n, const T* alpha, T* x, int incx);
+template <typename T, typename U = T>
+hipblasStatus_t hipblasScal(hipblasHandle_t handle, int n, const U* alpha, T* x, int incx);
 
 template <typename T>
 hipblasStatus_t hipblasCopy(hipblasHandle_t handle, int n, const T* x, int incx, T* y, int incy);
@@ -35,6 +35,10 @@ hipblasStatus_t hipblasSwap(hipblasHandle_t handle, int n, T* x, int incx, T* y,
 
 template <typename T>
 hipblasStatus_t hipblasDot(
+    hipblasHandle_t handle, int n, const T* x, int incx, const T* y, int incy, T* result);
+
+template <typename T>
+hipblasStatus_t hipblasDotc(
     hipblasHandle_t handle, int n, const T* x, int incx, const T* y, int incy, T* result);
 
 template <typename T1, typename T2>
@@ -47,7 +51,7 @@ template <typename T>
 hipblasStatus_t hipblasIamax(hipblasHandle_t handle, int n, const T* x, int incx, int* result);
 
 template <typename T>
-hipblasStatus_t hipblasAmin(hipblasHandle_t handle, int n, const T* x, int incx, int* result);
+hipblasStatus_t hipblasIamin(hipblasHandle_t handle, int n, const T* x, int incx, int* result);
 
 template <typename T>
 hipblasStatus_t hipblasAxpy(
@@ -65,6 +69,29 @@ hipblasStatus_t hipblasGer(hipblasHandle_t handle,
                            T*              A,
                            int             lda);
 
+// syr
+template <typename T>
+hipblasStatus_t hipblasSyr(hipblasHandle_t   handle,
+                           hipblasFillMode_t uplo,
+                           int               n,
+                           const T*          alpha,
+                           const T*          x,
+                           int               incx,
+                           T*                A,
+                           int               lda);
+
+// trsv
+template <typename T>
+hipblasStatus_t hipblasTrsv(hipblasHandle_t    handle,
+                            hipblasFillMode_t  uplo,
+                            hipblasOperation_t transA,
+                            hipblasDiagType_t  diag,
+                            int                m,
+                            const T*           A,
+                            int                lda,
+                            T*                 x,
+                            int                incx);
+
 template <typename T>
 hipblasStatus_t hipblasGemv(hipblasHandle_t    handle,
                             hipblasOperation_t transA,
@@ -78,6 +105,39 @@ hipblasStatus_t hipblasGemv(hipblasHandle_t    handle,
                             const T*           beta,
                             T*                 y,
                             int                incy);
+
+template <typename T>
+hipblasStatus_t hipblasGemvBatched(hipblasHandle_t    handle,
+                                   hipblasOperation_t transA,
+                                   int                m,
+                                   int                n,
+                                   const T*           alpha,
+                                   const T* const     A[],
+                                   int                lda,
+                                   const T* const     x[],
+                                   int                incx,
+                                   const T*           beta,
+                                   T* const           y[],
+                                   int                incy,
+                                   int                batch_count);
+
+template <typename T>
+hipblasStatus_t hipblasGemvStridedBatched(hipblasHandle_t    handle,
+                                          hipblasOperation_t transA,
+                                          int                m,
+                                          int                n,
+                                          const T*           alpha,
+                                          const T*           A,
+                                          int                lda,
+                                          int                strideA,
+                                          const T*           x,
+                                          int                incx,
+                                          int                stridex,
+                                          const T*           beta,
+                                          T*                 y,
+                                          int                incy,
+                                          int                stridey,
+                                          int                batch_count);
 
 template <typename T>
 hipblasStatus_t hipblasSymv(hipblasHandle_t   handle,
@@ -136,12 +196,12 @@ hipblasStatus_t hipblasGemmBatched(hipblasHandle_t    handle,
                                    int                n,
                                    int                k,
                                    const T*           alpha,
-                                   const T*           A[],
+                                   const T* const     A[],
                                    int                lda,
-                                   const T*           B[],
+                                   const T* const     B[],
                                    int                ldb,
                                    const T*           beta,
-                                   T*                 C[],
+                                   T* const           C[],
                                    int                ldc,
                                    int                batch_count);
 
